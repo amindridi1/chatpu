@@ -19,6 +19,8 @@ def index():
 def admin():
     return render_template('admin.html', users=users, banned_users=banned_users)
 
+
+
 @socketio.on('set_nickname')
 def handle_set_nickname(data):
     if request.sid in banned_users:
@@ -34,14 +36,25 @@ def handle_message(message):
     if request.sid in banned_users or users[request.sid]['banned']:
         disconnect()
         return
+
     nickname = users.get(request.sid, {}).get('nickname', 'Anonymous')
     msg = {'type': message['type'], 'data': message['data']}
+
     if msg['type'] == 'text':
         msg['data'] = f"{nickname}: {msg['data']}"
     elif msg['type'] == 'image':
-        msg['data'] = message['data']
+        msg['data'] = f"{nickname}: {message['data']}"
+
     print('Message: ' + str(msg))
     send(msg, broadcast=True)
+
+@socketio.on('admin_message')
+def handle_admin_message(message):
+    print(message)
+    s=message['data']
+    msg = {'type': 'text', 'data':f'Admin: {s}'}
+    send(msg, broadcast=True)
+
 
 @app.route('/api/kick_user', methods=['POST'])
 def api_kick_user():

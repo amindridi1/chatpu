@@ -1,119 +1,310 @@
+
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Admin Panel</title>
-    <!-- <script src="https://cdn.socket.io/4.3.2/socket.io.min.js" crossorigin="anonymous"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f2f2f2;
+        }
+
+        .container {
+            max-width: 960px;
+            margin: 20px auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        .banned {
+            color: #ff4d4d;
+        }
+
+        .actions {
+            display: flex;
+            justify-content: space-around;
+        }
+
+        .actions button {
+            padding: 5px 10px;
+            border: none;
+            border-radius: 3px;
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .actions button.ban {
+            background-color: #ff4d4d;
+        }
+
+        .actions button.ban:hover {
+            background-color: #ff1a1a;
+        }
+
+        .actions button.kick {
+            background-color: #ffa500;
+        }
+
+        .actions button.kick:hover {
+            background-color: #ff8c00;
+        }
+
+        .actions button.unban {
+            background-color: #4caf50;
+        }
+
+        .actions button.unban:hover {
+            background-color: #45a049;
+        }
+
+        #chat-container {
+            margin-top: 20px;
+            border: 1px solid #ddd;
+            padding: 10px;
+            height: 300px;
+            overflow-y: scroll;
+            background-color: #f2f2f2;
+            border-radius: 5px;
+        }
+
+        #admin-message {
+            margin-top: 10px;
+            display: flex;
+        }
+
+        #message-input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-size: 16px;
+        }
+
+        #message-input:focus {
+            outline: none;
+            border-color: #4caf50;
+        }
+
+        #send-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 3px;
+            background-color: #4caf50;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        #send-btn:hover {
+            background-color: #45a049;
+        }
+
+        .image-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .image-container .nickname {
+            font-weight: bold;
+            margin-right: 10px;
+            color: #333;
+        }
+
+        .image-container img {
+            max-width: 300px;
+            max-height: 200px;
+            border-radius: 5px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+    </style>
 </head>
 <body>
-    <div class="admin-container">
+    <div class="container">
         <h1>Admin Panel</h1>
-        <div id="user-list"></div>
+        <h2>Connected Users</h2>
+        <table>
+            <thead>
+                <tr>
+                    <th>Nickname</th>
+                    <th>Session ID</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for sid, user in users.items() %}
+                <tr>
+                    <td>{{ user.nickname }}</td>
+                    <td>{{ sid }}</td>
+                    <td>{% if user.banned %}
+                        <span class="banned">Banned</span>
+                        {% else %}
+                        Active
+                        {% endif %}
+                    </td>
+                    <td class="actions">
+                        {% if user.banned %}
+                        <button class="unban" onclick="unbanUser('{{ sid }}')"><i class="fas fa-unlock"></i> Unban</button>
+                        {% else %}
+                        <button class="ban" onclick="banUser('{{ sid }}')"><i class="fas fa-ban"></i> Ban</button>
+                        <button class="kick" onclick="kickUser('{{ sid }}')"><i class="fas fa-sign-out-alt"></i> Kick</button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <h2>Banned Users</h2>
+        <ul>
+            {% for sid in banned_users %}
+            <li>{{ sid }}</li>
+            {% endfor %}
+        </ul>
+
+        <h2>Chat Monitor</h2>
+        <div id="chat-container"></div>
+        <div id="admin-message">
+            <input type="text" id="message-input" placeholder="Enter message...">
+            <button id="send-btn" onclick="sendAdminMessage()"><i class="fas fa-paper-plane"></i> Send</button>
+        </div>
     </div>
+
+    
     <script>
-    // Add a function to call the API endpoint and populate the user list
-    function apiGetUserList() {
-        fetch('/api/user_list', {
-            method: 'GET'
-        })
-        .then(response => response.json())
-        .then(data => {
-            var userList = document.getElementById('user-list');
-            userList.innerHTML = '';
-            for (var sid in data) {
-                var userDiv = document.createElement('div');
-                var user = data[sid];
-                var nickname = user.nickname;
-                var banned = user.banned;
-                userDiv.textContent = nickname + (banned ? ' (Banned)' : '');
+        var socketio = io();
 
-                var banButton = document.createElement('button');
-                banButton.textContent = banned ? 'Unban' : 'Ban';
-                banButton.onclick = function() {
-                    if (banned) {
-                        apiUnbanUser(sid);
-                    } else {
-                        apiBanUser(sid);
-                    }
-                };
-                userDiv.appendChild(banButton);
-
-                var kickButton = document.createElement('button');
-                kickButton.textContent = 'Kick';
-                kickButton.onclick = function() {
-                    apiKickUser(sid);
-                };
-                userDiv.appendChild(kickButton);
-
-                userList.appendChild(userDiv);
-            }
+        socketio.on('connect', function() {
+            console.log('Connected to server');
         });
-    }
 
-    // Remove the Socket.IO connection and event handlers
-
-    // Add new functions to send API requests for kicking, banning, and unbanning users
-    function apiKickUser(sid) {
-        fetch('/api/kick_user', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ sid: sid })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                apiGetUserList(); // Update the user list
-            } else {
-                console.error(data.message);
+        socketio.on('message', function(msg) {
+            var chatContainer = document.getElementById('chat-container');
+            var messageElement = document.createElement('div');
+            if (msg.type === 'text') {
+                messageElement.textContent = msg.data;
+            } else if (msg.type === 'image') {
+                var imgContainer = document.createElement('div');
+                imgContainer.classList.add('image-container');
+                var nicknameSpan = document.createElement('span');
+                nicknameSpan.classList.add('nickname');
+                nicknameSpan.textContent = msg.data.split(': ')[0] + ':';
+                var img = document.createElement('img');
+                img.src = msg.data.split(': ')[1];
+                imgContainer.appendChild(nicknameSpan);
+                imgContainer.appendChild(img);
+                messageElement.appendChild(imgContainer);
             }
+            chatContainer.appendChild(messageElement);
         });
-    }
 
-    function apiBanUser(sid) {
-        fetch('/api/ban_user', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ sid: sid })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                apiGetUserList(); // Update the user list
-            } else {
-                console.error(data.message);
+        function kickUser(sid) {
+            fetch('/api/kick_user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ sid: sid })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('User kicked successfully');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while kicking the user');
+            });
+        }
+
+        function banUser(sid) {
+            fetch('/api/ban_user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ sid: sid })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('User banned successfully');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while banning the user');
+            });
+        }
+
+        function unbanUser(sid) {
+            fetch('/api/unban_user', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ sid: sid })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert('User unbanned successfully');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while unbanning the user');
+            });
+        }
+
+        function sendAdminMessage() {
+            var messageInput = document.getElementById('message-input');
+            var message = messageInput.value.trim();
+            if (message !== '') {
+                socketio.emit('admin_message', { type: 'text', data: message });
+                messageInput.value = '';
             }
-        });
-    }
-
-    function apiUnbanUser(sid) {
-        fetch('/api/unban_user', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({ sid: sid })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success') {
-                apiGetUserList(); // Update the user list
-            } else {
-                console.error(data.message);
-            }
-        });
-    }
-
-    // Modify the kick, ban, and unban buttons' onclick attributes to call the new API functions
-    // (keep these modifications as-is)
-
-    // Call the apiGetUserList function to populate the user list when the page loads
-    apiGetUserList();
-
+        }
     </script>
 </body>
 </html>
