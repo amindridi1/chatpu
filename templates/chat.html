@@ -4,16 +4,20 @@
     <meta charset="utf-8">
     <title>Flask Chat App</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js" integrity="sha384-IQsoLXGOZ2dEI/o+P+H7mRMImrHhU8q1kZV+XuHOc+F5r5tD53qXGd2qO/AQU8bQ" crossorigin="anonymous"></script>
+    <script src="https://cdn.socket.io/4.3.2/socket.io.min.js"  crossorigin="anonymous"></script>
 </head>
 <body>
     <div class="chat-container">
         <div id="messages"></div>
-        <input id="message" autocomplete="off" placeholder="Type a message..."/>
+        <input id="messageInput" autocomplete="off" placeholder="Type a message..."/>
         <button onclick="sendMessage()">Send</button>
     </div>
     <script>
         var socket = io();
+
+        socket.on('connect', function() {
+            console.log('Connected to server');
+        });
 
         socket.on('message', function(msg) {
             var messages = document.getElementById('messages');
@@ -23,9 +27,12 @@
         });
 
         function sendMessage() {
-            var input = document.getElementById('message');
-            socket.send(input.value);
-            input.value = '';
+            var input = document.getElementById('messageInput');
+            var message = input.value.trim();
+            if (message !== '') {
+                socket.emit('message', message);
+                input.value = '';
+            }
         }
     </script>
 </body>
