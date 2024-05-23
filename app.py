@@ -15,5 +15,5 @@ def handleMessage(msg):
     print('Message: ' + msg)
     send(msg, broadcast=True)
 
-
-socketio.run(app, debug=True, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
+if __name__=='__main__':
+    socketio.run(app, debug=True, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
