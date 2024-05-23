@@ -14,6 +14,9 @@ def index():
 def handleMessage(msg):
     print('Message: ' + msg)
     send(msg, broadcast=True)
-
-if __name__=='__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
+if __name__ == '__main__':
+    # Localhost only
+    socketio.run(app, debug=True)
+else:
+    # Production mode on Vercel
+    app = socketio.WSGIApp(app)
