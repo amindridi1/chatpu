@@ -26,7 +26,7 @@ def handle_set_nickname(data):
         return
     users[request.sid] = {'nickname': data['nickname'], 'banned': False}
     sessions[request.sid] = request.namespace
-    emit('message', f"{data['nickname']} has joined the chat.", broadcast=True)
+    emit('message', {'type': 'text', 'data': f"{data['nickname']} has joined the chat."}, broadcast=True)
     update_user_list()
 
 @socketio.on('message')
@@ -35,11 +35,13 @@ def handle_message(message):
         disconnect()
         return
     nickname = users.get(request.sid, {}).get('nickname', 'Anonymous')
-    msg = f"{nickname}: {message}"
-    print('Message: ' + msg)
+    msg = {'type': message['type'], 'data': message['data']}
+    if msg['type'] == 'text':
+        msg['data'] = f"{nickname}: {msg['data']}"
+    elif msg['type'] == 'image':
+        msg['data'] = message['data']
+    print('Message: ' + str(msg))
     send(msg, broadcast=True)
-
-# Add new API endpoints for kicking, banning, and unbanning users, and retrieving the user list
 
 @app.route('/api/kick_user', methods=['POST'])
 def api_kick_user():
@@ -60,7 +62,7 @@ def api_ban_user():
     user_to_ban = data['sid']
     if user_to_ban in users:
         users[user_to_ban]['banned'] = True
-        emit('message', f"{users[user_to_ban]['nickname']} has been banned from the chat.", broadcast=True)
+        emit('message', {'type': 'text', 'data': f"{users[user_to_ban]['nickname']} has been banned from the chat."}, broadcast=True)
         update_user_list()
         sessions[user_to_ban].disconnect(user_to_ban)
         return jsonify({'status': 'success'})
@@ -73,7 +75,7 @@ def api_unban_user():
     user_to_unban = data['sid']
     if user_to_unban in users:
         users[user_to_unban]['banned'] = False
-        emit('message', f"{users[user_to_unban]['nickname']} has been unbanned from the chat.", broadcast=True)
+        emit('message', {'type': 'text', 'data': f"{users[user_to_unban]['nickname']} has been unbanned from the chat."}, broadcast=True)
         update_user_list()
         return jsonify({'status': 'success'})
     else:
@@ -88,7 +90,7 @@ def api_user_list():
 def handle_disconnect():
     sid = request.sid
     nickname = users.pop(sid, {}).get('nickname', 'Anonymous')
-    emit('message', f"{nickname} has left the chat.", broadcast=True)
+    emit('message', {'type': 'text', 'data': f"{nickname} has left the chat."}, broadcast=True)
     update_user_list()
 
 def update_user_list():
