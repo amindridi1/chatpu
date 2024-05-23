@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel</title>
+    <!-- <script src="https://cdn.socket.io/4.3.2/socket.io.min.js" crossorigin="anonymous"></script> -->
+</head>
+<body>
+    <div class="admin-container">
+        <h1>Admin Panel</h1>
+        <div id="user-list"></div>
+    </div>
+    <script>
+    // Add a function to call the API endpoint and populate the user list
+    function apiGetUserList() {
+        fetch('/api/user_list', {
+            method: 'GET'
+        })
+        .then(response => response.json())
+        .then(data => {
+            var userList = document.getElementById('user-list');
+            userList.innerHTML = '';
+            for (var sid in data) {
+                var userDiv = document.createElement('div');
+                var user = data[sid];
+                var nickname = user.nickname;
+                var banned = user.banned;
+                userDiv.textContent = nickname + (banned ? ' (Banned)' : '');
+
+                var banButton = document.createElement('button');
+                banButton.textContent = banned ? 'Unban' : 'Ban';
+                banButton.onclick = function() {
+                    if (banned) {
+                        apiUnbanUser(sid);
+                    } else {
+                        apiBanUser(sid);
+                    }
+                };
+                userDiv.appendChild(banButton);
+
+                var kickButton = document.createElement('button');
+                kickButton.textContent = 'Kick';
+                kickButton.onclick = function() {
+                    apiKickUser(sid);
+                };
+                userDiv.appendChild(kickButton);
+
+                userList.appendChild(userDiv);
+            }
+        });
+    }
+
+    // Remove the Socket.IO connection and event handlers
+
+    // Add new functions to send API requests for kicking, banning, and unbanning users
+    function apiKickUser(sid) {
+        fetch('/api/kick_user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ sid: sid })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                apiGetUserList(); // Update the user list
+            } else {
+                console.error(data.message);
+            }
+        });
+    }
+
+    function apiBanUser(sid) {
+        fetch('/api/ban_user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ sid: sid })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                apiGetUserList(); // Update the user list
+            } else {
+                console.error(data.message);
+            }
+        });
+    }
+
+    function apiUnbanUser(sid) {
+        fetch('/api/unban_user', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ sid: sid })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                apiGetUserList(); // Update the user list
+            } else {
+                console.error(data.message);
+            }
+        });
+    }
+
+    // Modify the kick, ban, and unban buttons' onclick attributes to call the new API functions
+    // (keep these modifications as-is)
+
+    // Call the apiGetUserList function to populate the user list when the page loads
+    apiGetUserList();
+
+    </script>
+</body>
+</html>
