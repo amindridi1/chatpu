@@ -1,7 +1,7 @@
 ChatRoom: A Real-Time Chat Application
 =====================================
 
-![ChatRoom Screenshot](https://i.imgur.com/Xz1zjtC.png)
+![ChatRoom Screenshot](chatroom.jpeg)
 
 Introduction
 ------------
