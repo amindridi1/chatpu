@@ -1,7 +1,7 @@
 ChatRoom: A Real-Time Chat Application
 =====================================
 
-![ChatRoom Screenshot](chatroom.jpeg)
+<img src="chatroom.jpeg" alt="ChatRoom Screenshot" width="300">
 
 Introduction
 ------------
