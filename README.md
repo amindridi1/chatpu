@@ -1,7 +1,9 @@
 ChatRoom: A Real-Time Chat Application
 =====================================
 
-<img src="chatroom.jpeg" alt="ChatRoom Screenshot" width="300">
+<p align="center">
+  <img src="chatroom.jpeg" alt="ChatRoom Screenshot" width="300">
+</p>
 
 Introduction
 ------------
@@ -63,5 +65,6 @@ Acknowledgements
 
 * Inspiration for the chat interface design was taken from various sources, including [Pinterest](https://www.pinterest.com/).
 * The project was created by **Jztchl**
-
-![ChatRoom Logo](https://i.imgur.com/DYzjtC.png)
+<p align="center">
+  <img src="chatroom.jpeg" alt="ChatRoom Screenshot" width="100">
+</p>
