@@ -111,4 +111,4 @@ def update_user_list():
     emit('user_list', user_list, broadcast=True)
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True, host='0.0.0.0', port=int(os.getenv('PORT', 5000)))
+    socketio.run(app, debug=True, host='4.232.99.1', port=int(os.getenv('PORT', 8000)))
